@@ -8,7 +8,7 @@ spec:
     spec:
       containers:
       - name: producer
-        image: kafka-app:v4
+        image: kafka-app:latest
         imagePullPolicy: Never
         command: ["python", "app.py", "produce"]
       restartPolicy: Never
@@ -30,6 +30,6 @@ spec:
     spec:
       containers:
       - name: consumer
-        image: kafka-app:v4
+        image: kafka-app:latest
         imagePullPolicy: Never
         command: ["python", "app.py", "consume"]
