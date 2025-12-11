@@ -1,0 +1,77 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kafka
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-svc
+  namespace: kafka
+spec:
+  clusterIP: None
+  selector:
+    app: kafka
+  ports:
+  - port: 9092
+    name: client
+  - port: 9093
+    name: controller
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: kafka
+  namespace: kafka
+spec:
+  serviceName: kafka-svc
+  replicas: 3
+  selector:
+    matchLabels:
+      app: kafka
+  template:
+    metadata:
+      labels:
+        app: kafka
+    spec:
+      containers:
+      - name: kafka
+        image: confluentinc/cp-kafka:7.6.0
+        ports:
+        - containerPort: 9092
+        - containerPort: 9093
+        command:
+        - sh
+        - -c
+        - |
+          export KAFKA_NODE_ID=${HOSTNAME##*-}
+          export KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://${HOSTNAME}.kafka-svc.kafka.svc.cluster.local:9092
+          /etc/confluent/docker/run
+        env:
+        - name: KAFKA_PROCESS_ROLES
+          value: "broker,controller"
+        - name: CLUSTER_ID
+          value: "MkU3OEVBNTcwNTJENDM2Qk"
+        - name: KAFKA_CONTROLLER_QUORUM_VOTERS
+          value: "0@kafka-0.kafka-svc.kafka.svc.cluster.local:9093,1@kafka-1.kafka-svc.kafka.svc.cluster.local:9093,2@kafka-2.kafka-svc.kafka.svc.cluster.local:9093"
+        - name: KAFKA_LISTENERS
+          value: "PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093"
+        - name: KAFKA_CONTROLLER_LISTENER_NAMES
+          value: "CONTROLLER"
+        - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
+          value: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT"
+        - name: KAFKA_INTER_BROKER_LISTENER_NAME
+          value: "PLAINTEXT"
+        - name: KAFKA_LOG_DIRS
+          value: "/tmp/kraft-logs"
+        volumeMounts:
+        - name: data
+          mountPath: /tmp/kraft-logs
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 1Gi

@@ -1,0 +1,35 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: producer
+  namespace: kafka
+spec:
+  template:
+    spec:
+      containers:
+      - name: producer
+        image: kafka-app:v4
+        imagePullPolicy: Never
+        command: ["python", "app.py", "produce"]
+      restartPolicy: Never
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: consumer
+  namespace: kafka
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: consumer
+  template:
+    metadata:
+      labels:
+        app: consumer
+    spec:
+      containers:
+      - name: consumer
+        image: kafka-app:v4
+        imagePullPolicy: Never
+        command: ["python", "app.py", "consume"]
