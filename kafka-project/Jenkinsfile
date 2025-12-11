@@ -1,0 +1,27 @@
+pipeline {
+    agent any
+    stages {
+        stage('Build') {
+            steps {
+                dir('kafka-project') {
+                    sh 'docker build -t kafka-app:latest .'
+                }
+            }
+        }
+        stage('Deploy') {
+            steps {
+                dir('kafka-project') {
+                    sh 'kubectl delete job producer -n kafka --ignore-not-found=true'
+                    sh 'kubectl apply -f 02-app.yaml'
+                }
+            }
+        }
+        stage('Verify') {
+            steps {
+                sh 'kubectl get pods -n kafka'
+                sh 'sleep 10'
+                sh 'kubectl logs deployment/consumer -n kafka --tail=20'
+            }
+        }
+    }
+}
